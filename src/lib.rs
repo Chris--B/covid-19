@@ -1,14 +1,26 @@
-#[derive(Copy, Clone, Debug, Default)]
+use nalgebra::{Point2, Vector2};
+
+#[derive(Copy, Clone, Debug)]
 pub struct Person {
     /// Location in the simulated world.
     /// Not all possible locations may be valid, e.g. if they are obstructed by a wall.
-    pos: (),
+    pub pos: Point2<f64>,
 
     /// Combined speed and direction in the simulated world.
-    vel: (),
+    pub vel: Vector2<f64>,
 
     /// Susceptibility to contracting the COVID virus
-    health: Health,
+    pub health: Health,
+}
+
+impl Default for Person {
+    fn default() -> Person {
+        Person {
+            pos: Point2::new(0., 0.),
+            vel: Vector2::new(0., 0.),
+            health: Health::default(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -24,5 +36,17 @@ pub enum Health {
 impl Default for Health {
     fn default() -> Self {
         Health::Healthy
+    }
+}
+
+pub struct Simulation {
+    people: Vec<Person>,
+}
+
+impl Simulation {
+    pub fn with_population(people: impl Iterator<Item = Person>) -> Simulation {
+        Simulation {
+            people: people.collect(),
+        }
     }
 }

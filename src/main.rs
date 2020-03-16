@@ -1,6 +1,5 @@
+use covid;
 use gl;
-use nalgebra;
-
 use std::time::Instant;
 
 // We need our dependencies to match exactly,
