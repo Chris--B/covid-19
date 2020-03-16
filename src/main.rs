@@ -42,8 +42,10 @@ fn main() {
     let mut imgui_sdl2 = ImguiSdl2::new(&mut imgui, &window);
     let mut event_pump = sdl_context.event_pump().unwrap();
     let renderer = Renderer::new(&mut imgui, |s| video.gl_get_proc_address(s) as _);
-    let mut last_frame = Instant::now();
 
+    let mut sim = covid::Simulation::sample_set();
+
+    let mut last_frame = Instant::now();
     'running: loop {
         use sdl2::event::Event;
         use sdl2::keyboard::Keycode;
@@ -72,11 +74,11 @@ fn main() {
 
         let now = Instant::now();
         let delta = now - last_frame;
-        let delta_s = delta.as_secs() as f32 + delta.subsec_nanos() as f32 / 1_000_000_000.0;
         last_frame = now;
-        imgui.io_mut().delta_time = delta_s;
+        imgui.io_mut().delta_time = delta.as_secs_f32();
 
         // Update state
+        sim.tick(delta);
 
         // Build UI
         let ui = imgui.frame();
