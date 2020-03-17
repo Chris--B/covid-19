@@ -14,8 +14,40 @@ use imgui_sdl2::imgui;
 #[derive(Debug)]
 struct UiState {
     frame_metrics: FrameMetrics,
-    init_people_count: usize,
-    infection_chance: f64,
+    simulation_params: SimulationParams,
+}
+
+impl UiState {
+    fn new() -> Box<UiState> {
+        Box::new(UiState {
+            frame_metrics: FrameMetrics::default(),
+            simulation_params: SimulationParams::default(),
+        })
+    }
+
+    fn build_ui(&mut self, ui: &imgui::Ui) {
+        use imgui::*;
+
+        Window::new(im_str!("Covid-19 Knobs"))
+            .always_auto_resize(false)
+            .build(ui, || {
+                if ui
+                    .collapsing_header(im_str!("Frame Metrics"))
+                    .default_open(true)
+                    .build()
+                {
+                    self.frame_metrics.build_ui(ui);
+                }
+
+                if ui
+                    .collapsing_header(im_str!("Simulation Params"))
+                    .default_open(true)
+                    .build()
+                {
+                    self.simulation_params.build_ui(ui);
+                }
+            });
+    }
 }
 
 // Call it roughly 5 seconds
@@ -31,7 +63,7 @@ struct FrameMetrics {
 }
 
 impl FrameMetrics {
-    pub fn update(&mut self, next_ms: f32) {
+    fn update(&mut self, next_ms: f32) {
         // Update the list first
         self.millis.push(next_ms);
 
@@ -44,6 +76,24 @@ impl FrameMetrics {
 
         let sum: f32 = self.millis.iter().sum();
         self.mean = sum / self.millis.len() as f32;
+    }
+
+    fn build_ui(&mut self, ui: &imgui::Ui) {
+        use imgui::*;
+
+        let size = ui.item_rect_size();
+
+        ui.text(im_str!("Frame Times"));
+        ui.text(format!("Min:    {:>5.1} ms", self.min));
+        ui.text(format!("Max:    {:>5.1} ms", self.max));
+        ui.text(format!("Mean:   {:>5.1} ms", self.mean));
+        ui.text(format!("Median: {:>5.1} ms", self.median));
+
+        ui.plot_lines(im_str!(""), &self.millis)
+            .scale_min(0.)
+            .scale_max(self.max)
+            .graph_size([size[0], 150.])
+            .build();
     }
 }
 
@@ -59,44 +109,37 @@ impl Default for FrameMetrics {
     }
 }
 
-impl UiState {
-    fn new() -> Box<UiState> {
-        Box::new(UiState {
-            frame_metrics: FrameMetrics::default(),
-            init_people_count: 10,
-            infection_chance: 1.0,
-        })
+#[derive(Debug)]
+struct SimulationParams {
+    initial_people_count: i32,
+    infection_chance: f32,
+}
+
+impl SimulationParams {
+    fn build_ui(&mut self, ui: &imgui::Ui) {
+        use imgui::*;
+
+        ui.input_int(
+            im_str!("Initial Human Count"),
+            &mut self.initial_people_count,
+        )
+        .build();
+
+        // It's simpler to take a % has an integer and convert it here.
+        let mut percent: u32 = (100. * self.infection_chance + 0.5) as u32;
+        if Slider::new(im_str!("% Chance of Infection"), 0..=100).build(ui, &mut percent) {
+            self.infection_chance = percent as f32 / 100.;
+        }
     }
 }
 
-fn build_ui(ui: &imgui::Ui, state: &UiState) {
-    use imgui::*;
-
-    ui.show_demo_window(&mut true);
-
-    Window::new(im_str!("Simulation Metrics"))
-        .always_auto_resize(true)
-        // .size([600., 800.], Condition::FirstUseEver)
-        .build(ui, || {
-            ui.text(im_str!("Frame Times"));
-
-            let metrics = &state.frame_metrics;
-            ui.plot_lines(im_str!(""), &metrics.millis)
-                .scale_min(0.)
-                .scale_max(metrics.max)
-                .graph_size([500., 200.])
-                .build();
-
-            // No use showing metrics for so few stats
-            if metrics.millis.len() < 20 {
-                return;
-            }
-
-            ui.text(format!("Min:    {:>5.1} ms", metrics.min));
-            ui.text(format!("Max:    {:>5.1} ms", metrics.max));
-            ui.text(format!("Mean:   {:>5.1} ms", metrics.mean));
-            ui.text(format!("Median: {:>5.1} ms", metrics.median));
-        });
+impl Default for SimulationParams {
+    fn default() -> SimulationParams {
+        SimulationParams {
+            initial_people_count: 10,
+            infection_chance: 1.00,
+        }
+    }
 }
 
 fn main() {
@@ -152,10 +195,6 @@ fn main() {
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                }
-                | Event::KeyDown {
                     keycode: Some(Keycode::Q),
                     ..
                 } => break 'running,
@@ -176,7 +215,9 @@ fn main() {
 
         // Build UI
         let ui = imgui.frame();
-        build_ui(&ui, &state);
+
+        ui.show_demo_window(&mut true);
+        state.build_ui(&ui);
 
         unsafe {
             gl::ClearColor(0.2, 0.2, 0.2, 1.0);
