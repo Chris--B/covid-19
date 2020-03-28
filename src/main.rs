@@ -1,6 +1,6 @@
 use covid;
 use gl;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use imgui::im_str;
 // We need our dependencies to match exactly,
@@ -13,6 +13,7 @@ use imgui_sdl2::imgui;
 /// we will only use this through Box
 #[derive(Debug)]
 struct UiState {
+    show_demo_window: bool,
     frame_metrics: FrameMetrics,
     simulation_params: SimulationParams,
 }
@@ -20,6 +21,7 @@ struct UiState {
 impl UiState {
     fn new() -> Box<UiState> {
         Box::new(UiState {
+            show_demo_window: true,
             frame_metrics: FrameMetrics::default(),
             simulation_params: SimulationParams::default(),
         })
@@ -28,25 +30,40 @@ impl UiState {
     fn build_ui(&mut self, ui: &imgui::Ui) {
         use imgui::*;
 
-        Window::new(im_str!("Covid-19 Knobs"))
-            .always_auto_resize(false)
-            .build(ui, || {
-                if ui
-                    .collapsing_header(im_str!("Frame Metrics"))
-                    .default_open(true)
-                    .build()
-                {
-                    self.frame_metrics.build_ui(ui);
-                }
+        ui.main_menu_bar(|| {
+            ui.menu(im_str!("Menu"), true, || {
+                MenuItem::new(im_str!("Foo")).build(ui);
+                MenuItem::new(im_str!("Bar")).build(ui);
+                ui.separator();
 
-                if ui
-                    .collapsing_header(im_str!("Simulation Params"))
-                    .default_open(true)
-                    .build()
-                {
-                    self.simulation_params.build_ui(ui);
-                }
+                MenuItem::new(im_str!("Baz")).build(ui);
+                MenuItem::new(im_str!("Secret")).enabled(false).build(ui);
             });
+        });
+
+        ui.show_demo_window(&mut true);
+
+        Window::new(im_str!("Covid-19 Knobs")).build(ui, || {
+            if ui
+                .collapsing_header(im_str!("Frame Metrics"))
+                .default_open(true)
+                .build()
+            {
+                self.frame_metrics.build_ui(ui);
+            }
+
+            if ui
+                .collapsing_header(im_str!("Simulation Params"))
+                .default_open(true)
+                .build()
+            {
+                self.simulation_params.build_ui(ui);
+            }
+        });
+
+        Window::new(im_str!("Simulation")).build(ui, || {
+            // insert sim render target
+        });
     }
 }
 
@@ -174,9 +191,11 @@ fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let renderer = Renderer::new(&mut imgui, |s| video.gl_get_proc_address(s) as _);
 
+    // simulation & ui
     let mut state = UiState::new();
     let mut sim = covid::Simulation::sample_set();
 
+    // Event loop
     let mut frame_count = 0;
     let mut last_frame = Instant::now();
     'running: loop {
@@ -216,7 +235,6 @@ fn main() {
         // Build UI
         let ui = imgui.frame();
 
-        ui.show_demo_window(&mut true);
         state.build_ui(&ui);
 
         unsafe {
@@ -239,8 +257,5 @@ fn main() {
                 .frame_metrics
                 .update((finish - start).as_millis() as f32);
         }
-
-        // Sleep to hit our target framerate.
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 }
