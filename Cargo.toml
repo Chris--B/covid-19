@@ -7,9 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# imgui = "*" # Use the exact version that imgui-sdl2 uses
-imgui-sdl2 = "0.8"
-imgui-opengl-renderer = "0.6"
-nalgebra = "0.20"
-sdl2 = "0.33"
-gl = "0.14"
+imgui-sdl2              = "0.8"
+ultraviolet             = "0.4"
+sdl2                    = "0.33"
+gl                      = "0.14"
+imgui-opengl-renderer   = "0.6"

@@ -1,4 +1,4 @@
-use nalgebra::{Point2, Vector2};
+use ultraviolet::vec::Vec2;
 
 use std::time;
 
@@ -6,10 +6,10 @@ use std::time;
 pub struct Person {
     /// Location in the simulated world.
     /// Not all possible locations may be valid, e.g. if they are obstructed by a wall.
-    pub pos: Point2<f64>,
+    pub pos: Vec2,
 
     /// Combined speed and direction in the simulated world.
-    pub vel: Vector2<f64>,
+    pub vel: Vec2,
 
     /// Susceptibility to contracting the COVID virus
     pub health: Health,
@@ -18,8 +18,8 @@ pub struct Person {
 impl Default for Person {
     fn default() -> Person {
         Person {
-            pos: Point2::new(0., 0.),
-            vel: Vector2::new(0., 0.),
+            pos: Vec2::new(0., 0.),
+            vel: Vec2::new(0., 0.),
             health: Health::default(),
         }
     }
@@ -47,11 +47,11 @@ impl Default for Health {
 pub struct Simulation {
     /// Lower left-hand corner of the simulation world.
     /// This is used with `upper` to bound the world into a box.
-    lower: Point2<f64>,
+    lower: Vec2,
 
     /// Upper right-hand corner of the simulation world.
     /// This is used with `lower` to bound the world into a box.
-    upper: Point2<f64>,
+    upper: Vec2,
 
     /// All persons in the simulation that may interact
     people: Vec<Person>,
@@ -61,21 +61,21 @@ impl Simulation {
     // Create a simulation with some test data
     pub fn sample_set() -> Simulation {
         let people = vec![Person {
-            pos: Point2::new(0., 0.),
-            vel: Vector2::new(10., 10.),
+            pos: Vec2::new(0., 0.),
+            vel: Vec2::new(10., 10.),
             ..Person::default()
         }];
 
         Simulation {
-            lower: Point2::new(-100., -100.),
-            upper: Point2::new(100., 100.),
+            lower: Vec2::new(-100., -100.),
+            upper: Vec2::new(100., 100.),
             people,
         }
     }
 
     /// Advance the simulation by one step
     pub fn tick(&mut self, dt: time::Duration) {
-        let dt_s = dt.as_secs_f64();
+        let dt_s = dt.as_secs_f32();
 
         // Collisions are for boomers
         for i in 0..self.people.len() {
