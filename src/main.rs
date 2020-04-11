@@ -8,6 +8,9 @@ use imgui::im_str;
 #[allow(pub_use_of_private_extern_crate)]
 use imgui_sdl2::imgui;
 
+mod renderer;
+use renderer::Renderer;
+
 /// A container for state that's passed into ImGui.
 /// Because we're passing pointers here into C++ code,
 /// we will only use this through Box
@@ -160,7 +163,6 @@ impl Default for SimulationParams {
 }
 
 fn main() {
-    use imgui_opengl_renderer::Renderer;
     use imgui_sdl2::ImguiSdl2;
 
     let sdl_context = sdl2::init().unwrap();
