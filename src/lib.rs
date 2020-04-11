@@ -75,12 +75,40 @@ impl Simulation {
 
     /// Advance the simulation by one step
     pub fn tick(&mut self, dt: time::Duration) {
+        // Each hit against a wall reduces the velocity by this factor
+        // Factors > 1 "speed up" the system
+
+        const DECAY_FACTOR: f32 = 0.95;
         let dt_s = dt.as_secs_f32();
 
-        // Collisions are for boomers
         for i in 0..self.people.len() {
-            let person = &mut self.people[i];
-            person.pos += dt_s * person.vel;
+            let p = &mut self.people[i];
+
+            let mut next_p = p.pos + dt_s * p.vel;
+            let mut next_v = p.vel;
+
+            if next_p.x <= self.lower.x {
+                next_p.x = self.lower.x;
+                next_v.x = -next_v.x;
+                next_v *= DECAY_FACTOR;
+            } else if next_p.x >= self.upper.x {
+                next_p.x = self.upper.x;
+                next_v.x = -next_v.x;
+                next_v *= DECAY_FACTOR;
+            }
+
+            if next_p.y <= self.lower.y {
+                next_p.y = self.lower.y;
+                next_v.y = -next_v.y;
+                next_v *= DECAY_FACTOR;
+            } else if next_p.y >= self.upper.y {
+                next_p.y = self.upper.y;
+                next_v.y = -next_v.y;
+                next_v *= DECAY_FACTOR;
+            }
+
+            p.pos = next_p;
+            p.vel = next_v;
         }
     }
 }
